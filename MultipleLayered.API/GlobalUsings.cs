@@ -2,3 +2,8 @@
 global using Multiple_Layered_DataAccess.Library.Data;
 global using Multiple_Layered_DataAccess.Library.IdentityConfigurations;
 global using Multiple_Layered_DataAccess.Library.Seeds;
+global using Multiple_Layered_DataAccess.Library.Repositories;
+global using Multiple_Layered_DataAccess.Library.UnitOfWork;
+global using Multiple_Layered.API.Extensions;
+global using Multiple_Layered_Service.Library.Dtos.AuthDtos;
+global using Multiple_Layered_Service.Library.Services.AuthRepo;

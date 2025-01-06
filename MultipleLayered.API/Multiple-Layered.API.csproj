@@ -18,11 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Multiple-Layered-DataAccess.Library\Multiple-Layered-DataAccess.Library.csproj" />
+    <ProjectReference Include="..\Multiple-Layered-Service.Library\Multiple-Layered-Service.Library.csproj" />
   </ItemGroup>
 
 </Project>
