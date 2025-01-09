@@ -22,5 +22,7 @@ namespace Multiple_Layered_DataAccess.Library.UnitOfWork
         // Cache operations
         Task ClearCacheAsync();
         Task RefreshCacheAsync();
+        Task<T?> GetFromCacheAsync<T>(string key);
+        Task SetToCacheAsync<T>(string key, T value);
     }
 }

@@ -66,6 +66,15 @@
             _transaction?.Dispose();
         }
 
+        public async Task<T?> GetFromCacheAsync<T>(string key)
+        {
+            var cachedData = await _cache.GetAsync(key);
+            if (cachedData is null)
+                return default;
+
+            return JsonSerializer.Deserialize<T>(cachedData);
+        }
+
         public async Task RefreshCacheAsync()
         {
             await ClearCacheAsync();
@@ -98,6 +107,17 @@
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public async Task SetToCacheAsync<T>(string key, T value)
+        {
+            var options = new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
+                SlidingExpiration = TimeSpan.FromMinutes(30),
+            };
+
+            await _cache.SetAsync(key, Serialize(value), options);
         }
 
         private byte[] Serialize<T>(T obj) => JsonSerializer.SerializeToUtf8Bytes(obj);
