@@ -19,9 +19,6 @@ public class AuthEndpoints : IEndpointDefinition
         group.MapPost("/register", RegisterAsync)
             .AllowAnonymous();
 
-        group.MapPost("/change-password", ChangePasswordAsync)
-            .RequireAuthorization();
-
         group.MapPost("/logout", LogoutAsync)
             .RequireAuthorization();
     }
@@ -32,6 +29,10 @@ public class AuthEndpoints : IEndpointDefinition
         {
             var result = await authService.LoginAsync(loginDto);
             _logger.LogInformation("Kullanıcı Giriş Denemesi: {Email}", loginDto.Email);
+
+            if(result.IsLockedOut)
+                return Results.BadRequest("Çok fazla başarısız deneme yaptınız. Daha sonra tekrar deneyin.!");
+
             return result.Succeeded ? Results.Ok() : Results.BadRequest("Lütfen Bilgilerinizi Tekrar Kontrol Edin.!!");
         }
         catch (Exception ex)
@@ -52,21 +53,6 @@ public class AuthEndpoints : IEndpointDefinition
         catch (Exception ex)
         {
             _logger.LogError(ex, "Kayıt Sırasında Hata Meydana Geldi: {Email}", registerDto.Email);
-            return Results.StatusCode(500);
-        }
-    }
-
-    private async Task<IResult> ChangePasswordAsync(ChangePasswordDto changePasswordDto, IAuthService authService)
-    {
-        try
-        {
-            var result = await authService.ChangePasswordAsync(changePasswordDto);
-            _logger.LogInformation("Şifre Değiştirme Denemesi: {Email}", changePasswordDto.Email);
-            return result.Succeeded ? Results.Ok() : Results.BadRequest(result.Errors);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Şifre Değiştirme Sırasında Bir Hata Meydana Geldi: {Email}", changePasswordDto.Email);
             return Results.StatusCode(500);
         }
     }

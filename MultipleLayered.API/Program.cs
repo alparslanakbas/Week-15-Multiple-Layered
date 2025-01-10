@@ -1,6 +1,3 @@
-using Multiple_Layered_Service.Library.Services.AuthRepo;
-using Multiple_Layered_Service.Library.Services.AuthServices;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Logging
@@ -28,6 +25,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

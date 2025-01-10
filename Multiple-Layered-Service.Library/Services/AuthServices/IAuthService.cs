@@ -5,6 +5,5 @@
         Task<SignInResult> LoginAsync(LoginDto loginDto);
         Task<IdentityResult> RegisterAsync(RegisterDto registerDto);
         Task LogoutAsync();
-        Task<IdentityResult> ChangePasswordAsync(ChangePasswordDto changePasswordDto);
     }
 }

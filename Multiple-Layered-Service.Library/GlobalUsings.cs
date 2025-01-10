@@ -1,3 +1,9 @@
 ﻿global using Multiple_Layered_Service.Library.Dtos.AuthDtos;
 global using Microsoft.AspNetCore.Identity;
 global using Multiple_Layered_Service.Library.Services.AuthRepo;
+global using Microsoft.Extensions.Logging;
+global using Multiple_Layered_DataAccess.Library.Models;
+global using Multiple_Layered_DataAccess.Library.UnitOfWork;
+global using Multiple_Layered_Service.Library.Dtos.UserDtos;
+global using Microsoft.Extensions.Caching.Distributed;
+global using System.Text.Json;

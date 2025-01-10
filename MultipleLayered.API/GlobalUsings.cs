@@ -7,3 +7,7 @@ global using Multiple_Layered_DataAccess.Library.UnitOfWork;
 global using Multiple_Layered.API.Extensions;
 global using Multiple_Layered_Service.Library.Dtos.AuthDtos;
 global using Multiple_Layered_Service.Library.Services.AuthRepo;
+global using Multiple_Layered_Service.Library.Services.AuthServices;
+global using Multiple_Layered_Service.Library.Services.UserServices;
+global using Microsoft.AspNetCore.Identity;
+global using Multiple_Layered_Service.Library.Dtos.UserDtos;
