@@ -22,10 +22,17 @@ builder.Services.AddDistributedMemoryCache();
 builder.Services.AddAuthorization();
 
 // Scopes
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddLifecycle();
+
+// Token settings
+builder.Services.Configure<CustomTokenOptions>(builder.Configuration.GetSection("TokenOptions"));
+
+// Jwt settings
+builder.Services.AddJwtOptions(builder.Configuration);
+
+// Swagger settings
+builder.Services.ConfigureSwagger();
+
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -62,13 +69,18 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(opts =>
+    {
+        opts.SwaggerEndpoint("/swagger/v1/swagger.json", "Multiple-Layer.Api v1.0.0");
+        opts.InjectStylesheet("/swagger-css/swagger-custom-ui.css");
+    });
 }
 
 app.UseHttpsRedirection();
 
-
+app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 
 app.Run();
