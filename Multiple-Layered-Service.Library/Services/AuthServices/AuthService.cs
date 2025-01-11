@@ -1,22 +1,22 @@
-﻿using Multiple_Layered_DataAccess.Library.Models;
-
-namespace Multiple_Layered_Service.Library.Services.AuthServices
+﻿namespace Multiple_Layered_Service.Library.Services.AuthServices
 {
     public class AuthService : IAuthService
     {
         readonly UserManager<User> _userManager;
         readonly SignInManager<User> _signInManager;
         readonly ILogger<AuthService> _logger;
+        readonly ITokenService _tokenService;
 
 
-        public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, ILogger<AuthService> logger)
+        public AuthService(UserManager<User> userManager, SignInManager<User> signInManager, ILogger<AuthService> logger, ITokenService tokenService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _logger = logger;
+            _tokenService = tokenService;
         }
 
-        public async Task<SignInResult> LoginAsync(LoginDto loginDto)
+        public async Task<(SignInResult SignInResult, Token? Token)> LoginAsync(LoginDto loginDto)
         {
             try
             {
@@ -24,7 +24,7 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
                 if (user is null)
                 {
                     _logger.LogWarning("Giriş başarısız: Kullanıcı bulunamadı - {Email}", loginDto.Email);
-                    return SignInResult.Failed;
+                    return (SignInResult.Failed, null);
                 }
 
                 // Kullanıcı kilitli mi kontrol et
@@ -32,7 +32,7 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
                 {
                     var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
                     _logger.LogWarning("Kullanıcı hesabı kilitli: {Email}, Kilit bitiş: {LockoutEnd}", loginDto.Email, lockoutEnd);
-                    return SignInResult.LockedOut;
+                    return (SignInResult.LockedOut, null);
                 }
 
                 var signInResult = await _signInManager.CheckPasswordSignInAsync(
@@ -46,6 +46,14 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     await _userManager.ResetAccessFailedCountAsync(user);
                     _logger.LogInformation("Başarılı giriş: {Email}", loginDto.Email);
+
+                    var token = await _tokenService.CreateToken(user);
+
+                    user.RefreshToken = token.RefreshToken;
+                    user.RefreshTokenEndDate = token.RefreshTokenExpiration;
+                    await _userManager.UpdateAsync(user);
+
+                    return (signInResult, token);
                 }
                 else
                 {
@@ -54,9 +62,8 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
 
                     // Başarısız giriş sayısını artır
                     await _userManager.AccessFailedAsync(user);
+                    return (signInResult, null);
                 }
-
-                return signInResult;
             }
             catch (Exception ex)
             {
@@ -67,11 +74,30 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
 
         public async Task LogoutAsync()
         {
+            var userId = _signInManager.Context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user is not null)
+                {
+                    user.RefreshToken = null;
+                    user.RefreshTokenEndDate = DateTime.Now;
+                    await _userManager.UpdateAsync(user);
+                }
+            }
+
             await _signInManager.SignOutAsync();
         }
 
-        public async Task<IdentityResult> RegisterAsync(RegisterDto registerDto)
+        public async Task<Response> RegisterAsync(RegisterDto registerDto)
         {
+            if (await _userManager.FindByEmailAsync(registerDto.Email) != null)
+                return new Response
+                {
+                    Succeeded = false,
+                    Message = "Bu Email Zaten Kayıtlı"
+                };
+
             var user = new User
             {
                 FirstName = registerDto.FirstName,
@@ -80,11 +106,30 @@ namespace Multiple_Layered_Service.Library.Services.AuthServices
                 Email = registerDto.Email
             };
 
-            if (await _userManager.FindByEmailAsync(registerDto.Email) != null)
-                return IdentityResult.Failed(new IdentityError { Description = "Bu Email Zaten Kayıtlı" });
+            var result = await _userManager.CreateAsync(user, registerDto.Password);
 
-            return await _userManager.CreateAsync(user, registerDto.Password);
+            if (!result.Succeeded)
+                return new Response
+                {
+                    Succeeded = false,
+                    Message = result.Errors.First().Description
+                };
 
+            await _userManager.AddToRoleAsync(user, "User");
+
+            var token = await _tokenService.CreateToken(user);
+
+            user.RefreshToken = token.RefreshToken;
+            user.RefreshTokenEndDate = token.RefreshTokenExpiration;
+
+            await _userManager.UpdateAsync(user);
+
+            return new Response
+            {
+                Succeeded = true,
+                Message = "Kayıt işlemi başarılı",
+                Token = token
+            };
         }
     }
 }

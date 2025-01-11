@@ -27,13 +27,21 @@ public class AuthEndpoints : IEndpointDefinition
     {
         try
         {
-            var result = await authService.LoginAsync(loginDto);
+            var (signInResult, token) = await authService.LoginAsync(loginDto);
             _logger.LogInformation("Kullanıcı Giriş Denemesi: {Email}", loginDto.Email);
 
-            if(result.IsLockedOut)
-                return Results.BadRequest("Çok fazla başarısız deneme yaptınız. Daha sonra tekrar deneyin.!");
+            if (signInResult.IsLockedOut)
+                return Results.BadRequest("Çok fazla başarısız deneme yaptınız. Daha sonra tekrar deneyin!");
 
-            return result.Succeeded ? Results.Ok() : Results.BadRequest("Lütfen Bilgilerinizi Tekrar Kontrol Edin.!!");
+            if (!signInResult.Succeeded)
+                return Results.BadRequest("Lütfen Bilgilerinizi Tekrar Kontrol Edin!");
+
+            return Results.Ok(new
+            {
+                Succeeded = true,
+                Message = "Giriş başarılı",
+                Token = token
+            });
         }
         catch (Exception ex)
         {
