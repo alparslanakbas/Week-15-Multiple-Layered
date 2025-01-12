@@ -40,7 +40,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseMiddleware<ExceptionMiddleware>();
 app.RegisterEndpoints();
+
 
 using (var scope = app.Services.CreateAsyncScope())
 {

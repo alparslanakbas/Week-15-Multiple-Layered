@@ -46,7 +46,7 @@ public class AuthEndpoints : IEndpointDefinition
         catch (Exception ex)
         {
             _logger.LogError(ex, "Giriş Sırasında Bir Hata Meydana Geldi: {Email}", loginDto.Email);
-            return Results.StatusCode(500);
+            throw;
         }
     }
 
@@ -61,7 +61,7 @@ public class AuthEndpoints : IEndpointDefinition
         catch (Exception ex)
         {
             _logger.LogError(ex, "Kayıt Sırasında Hata Meydana Geldi: {Email}", registerDto.Email);
-            return Results.StatusCode(500);
+            throw;
         }
     }
 
@@ -76,7 +76,7 @@ public class AuthEndpoints : IEndpointDefinition
         catch (Exception ex)
         {
             _logger.LogError(ex, "Çıkış Yapılırken Hata Meydana Geldi");
-            return Results.StatusCode(500);
+            throw;
         }
     }
 }

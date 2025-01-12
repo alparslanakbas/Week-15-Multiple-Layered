@@ -85,8 +85,8 @@
 
             var options = new DistributedCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
-                SlidingExpiration = TimeSpan.FromMinutes(30),
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(5),
+                SlidingExpiration = TimeSpan.FromMinutes(10),
             };
 
             await _cache.SetAsync("users_cache", Serialize(users), options);
@@ -113,8 +113,8 @@
         {
             var options = new DistributedCacheEntryOptions
             {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
-                SlidingExpiration = TimeSpan.FromMinutes(30),
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
+                SlidingExpiration = TimeSpan.FromMinutes(10),
             };
 
             await _cache.SetAsync(key, Serialize(value), options);
