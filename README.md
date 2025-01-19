@@ -124,6 +124,6 @@ NLog kullanılarak farklı log seviyeleri için yapılandırma yapılmıştır:
 ## 📞 İletişim
 
 - Proje Sahibi: Alparslan Akbaş
-- Email: alparslan43341@gmail.com
-- LinkedIn: [LinkedIn Profili](https://www.linkedin.com/in/alparslan-akbas/)
-- GitHub: [GitHub Profili](https://github.com/Alparslan524)
+- Email: bybluestht@gmail.com
+- LinkedIn: [LinkedIn Profili](https://www.linkedin.com/in/alparslanakbas/)
+- GitHub: [GitHub Profili](https://github.com/alparslanakbas)
