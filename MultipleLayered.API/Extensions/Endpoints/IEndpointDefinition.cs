@@ -1,4 +1,4 @@
-﻿namespace Multiple_Layered.API.Extensions;
+﻿namespace Extensions.Endpoints;
 
 public interface IEndpointDefinition
 {

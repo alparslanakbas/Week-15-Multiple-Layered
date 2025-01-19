@@ -1,12 +1,13 @@
-﻿global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿// Data acces
+global using Multiple_Layered_DataAccess.Library.Data;
+global using Multiple_Layered_DataAccess.Library.Repositories;
 global using Multiple_Layered_DataAccess.Library.Models;
+global using Multiple_Layered_DataAccess.Library.EntityConfigurations;
+
+// EF Core
+global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore.Metadata.Builders;
-global using Multiple_Layered_DataAccess.Library.EntityConfigurations;
 global using Microsoft.Extensions.DependencyInjection;
-global using Multiple_Layered_DataAccess.Library.Data;
-global using Microsoft.EntityFrameworkCore.Storage;
-global using Microsoft.Extensions.Caching.Distributed;
-global using Multiple_Layered_DataAccess.Library.Repositories;
-global using System.Text.Json;
+

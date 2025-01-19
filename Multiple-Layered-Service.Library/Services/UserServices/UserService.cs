@@ -15,19 +15,28 @@
             _signInManager = signInManager;
         }
 
-        public async Task<IEnumerable<ListAllUserDto>> GetAllAsync()
+        public async Task<PagedResult<ListAllUserDto>> GetAllAsync(Pagination pagination)
         {
             try
             {
-                var userDtoList = await _unitOfWork.GetFromCacheAsync<IEnumerable<ListAllUserDto>>("users_cache");
-                if (userDtoList is not null)
+                var cacheKey = CacheHelpers.GenerateCacheKey("users_cache", pagination);
+
+                var cachedResult = await _unitOfWork.GetFromCacheAsync<PagedResult<ListAllUserDto>>(cacheKey);
+                if (cachedResult is not null)
                 {
-                    _logger.LogInformation("Kullanıcılar cache'den getirildi");
-                    return userDtoList;
+                    _logger.LogInformation("Kullanıcılar cache'den getirildi. Sayfa: {Page}, Boyut: {Size}",
+                        pagination.Page, pagination.Size);
+                    return cachedResult;
                 }
 
                 var users = await _unitOfWork.Users.GetAllAsync();
-                userDtoList = users.Select(user => new ListAllUserDto(
+                var totalCount = users.Count();
+
+                var paginatedUsers = users
+                    .Skip((pagination.Page - 1) * pagination.Size)
+                    .Take(pagination.Size);
+
+                var userDtos = paginatedUsers.Select(user => new ListAllUserDto(
                     user.Id,
                     user.FirstName,
                     user.LastName,
@@ -39,13 +48,24 @@
                     user.TwoFactorEnabled
                 ));
 
-                await _unitOfWork.SetToCacheAsync("users_cache", userDtoList);
-                _logger.LogInformation("Tüm kullanıcılar başarıyla getirildi");
-                return userDtoList;
+                var result = new PagedResult<ListAllUserDto>(
+                    userDtos,
+                    totalCount,
+                    pagination.Page,
+                    pagination.Size
+                );
+
+                await _unitOfWork.SetToCacheAsync(cacheKey, result);
+
+                _logger.LogInformation("Kullanıcılar başarıyla getirildi. Sayfa: {Page}, Boyut: {Size}, Toplam: {Total}",
+                    pagination.Page, pagination.Size, totalCount);
+
+                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Kullanıcıları getirirken hata oluştu");
+                _logger.LogError(ex, "Kullanıcıları getirirken hata oluştu. Sayfa: {Page}, Boyut: {Size}",
+                    pagination.Page, pagination.Size);
                 throw;
             }
         }
@@ -55,10 +75,7 @@
             {
                 var user = await _unitOfWork.Users.GetByIdAsync(id);
                 if (user is null)
-                {
-                    _logger.LogWarning("Kullanıcı bulunamadı: {Id}", id);
-                    return null;
-                }
+                    throw new KeyNotFoundException();
 
                 var userDto = new ListAllUserDto(
                     user.Id,
@@ -96,7 +113,6 @@
                     });
                 }
 
-                // Temel bilgileri güncelle
                 user.FirstName = updateUserDto.FirstName;
                 user.LastName = updateUserDto.LastName;
                 user.UserName = updateUserDto.UserName;
@@ -106,14 +122,12 @@
                 user.PhoneNumberConfirmed = updateUserDto.PhoneNumberConfirmed;
                 user.TwoFactorEnabled = updateUserDto.TwoFactorEnabled;
 
-                // Email değişmişse
                 if (user.Email != updateUserDto.Email)
                 {
                     user.EmailConfirmed = false;
                     await _userManager.UpdateSecurityStampAsync(user);
                 }
 
-                // Kullanıcı bilgilerini güncelle eğer hata çıkarsa işlemi geri al
                 var updateResult = await _userManager.UpdateAsync(user);
                 if (!updateResult.Succeeded)
                 {
@@ -121,9 +135,7 @@
                     return updateResult;
                 }
 
-                // Şifre değiştirme
-                if (!string.IsNullOrEmpty(updateUserDto.CurrentPassword) &&
-            !string.IsNullOrEmpty(updateUserDto.NewPassword))
+                if (!string.IsNullOrEmpty(updateUserDto.CurrentPassword) && !string.IsNullOrEmpty(updateUserDto.NewPassword))
                 {
                     var passwordResult = await _userManager.ChangePasswordAsync(
                         user,
@@ -137,7 +149,6 @@
                         return passwordResult;
                     }
 
-                    // Güvenlik damgasını güncelle
                     await _userManager.UpdateSecurityStampAsync(user);
                 }
 
@@ -187,7 +198,6 @@
                     // Güvenlik damgasını güncelle
                     await _userManager.UpdateSecurityStampAsync(user);
 
-                    // Tüm oturumları sonlandır
                     await _signInManager.SignOutAsync();
 
                     await _unitOfWork.CommitAsync();
@@ -208,6 +218,37 @@
                 {
                     Description = "Şifre değiştirme işlemi sırasında beklenmeyen bir hata oluştu"
                 });
+            }
+        }
+        public async Task DeleteAsync(Guid id)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var user = await _userManager.FindByIdAsync(id.ToString());
+                if (user is null)
+                    throw new KeyNotFoundException();
+
+                await _signInManager.SignOutAsync();
+
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                {
+                    await _unitOfWork.RollbackAsync();
+                    throw new InvalidOperationException(result.Errors.First().Description);
+                }
+
+                await _unitOfWork.ClearCacheAsync();
+                await _unitOfWork.CommitAsync();
+
+                _logger.LogInformation("Kullanıcı başarıyla silindi: {Id}", id);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync();
+                _logger.LogError(ex, "Kullanıcı silinirken hata oluştu: {Id}", id);
+                throw;
             }
         }
     }

@@ -1,7 +1,4 @@
-﻿using Multiple_Layered_Service.Library.Dtos.ProductDtos;
-using Multiple_Layered_Service.Library.Services.ProductServices;
-
-namespace Multiple_Layered.API.Endpoints.Product
+﻿namespace Multiple_Layered.API.Endpoints.Product
 {
     public class ProductEndpoints : IEndpointDefinition
     {
@@ -21,7 +18,7 @@ namespace Multiple_Layered.API.Endpoints.Product
                 .WithDescription("Tüm Ürünleri Getirir")
                 .Produces<IEnumerable<ListAllProductDto>>(StatusCodes.Status200OK)
                 .Produces(StatusCodes.Status500InternalServerError)
-                .AddEndpointFilter<TimeRestrictFilter>();
+                /*.AddEndpointFilter<TimeRestrictFilter>()*/;
 
             group.MapGet("/{id}", GetProductByIdAsync)
                 .WithName("GetProductById")
@@ -56,11 +53,12 @@ namespace Multiple_Layered.API.Endpoints.Product
                 .RequireAuthorization();
         }
 
-        private async Task<IResult> GetAllProductsAsync(IProductService productService)
+        private async Task<IResult> GetAllProductsAsync(IProductService productService, [FromQuery] int page =1, [FromQuery] int size = 10)
         {
             try
             {
-                var result = await productService.GetAllAsync();
+                var pagination = new Pagination(page, size);
+                var result = await productService.GetAllAsync(pagination);
                 return Results.Ok(result);
             }
             catch (Exception ex)
@@ -76,10 +74,6 @@ namespace Multiple_Layered.API.Endpoints.Product
             {
                 var result = await productService.GetByIdAsync(id);
                 return Results.Ok(result);
-            }
-            catch (KeyNotFoundException)
-            {
-                return Results.NotFound();
             }
             catch (Exception ex)
             {

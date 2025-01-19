@@ -89,9 +89,11 @@
                 SlidingExpiration = TimeSpan.FromMinutes(10),
             };
 
-            await _cache.SetAsync("users_cache", Serialize(users), options);
-            await _cache.SetAsync("products_cache", Serialize(products), options);
-            await _cache.SetAsync("orders_cache", Serialize(orders), options);
+            await CreatePagedCache(products, p => new ListAllProductDto(p.Id, p.Name, p.Price, p.Stock), "products_cache", options);
+            await CreatePagedCache(users, u => new ListAllUserDto
+            (u.Id, u.FirstName, u.LastName, u.UserName!, u.Email!, u.PhoneNumber, u.EmailConfirmed, u.PhoneNumberConfirmed, u.TwoFactorEnabled), 
+            "users_cache", options);
+            await CreatePagedCache(orders, o => new ListAllOrderDto(o.Id, o.OrderDate, o.TotalAmount, o.UserId, o.User.FirstName + o.User.LastName), "orders_cache", options);
         }
 
         public async Task RollbackAsync()
@@ -121,5 +123,26 @@
         }
 
         private byte[] Serialize<T>(T obj) => JsonSerializer.SerializeToUtf8Bytes(obj);
+        private async Task CreatePagedCache<T, TDto>(IEnumerable<T> items, Func<T, TDto> dtoMapper, string cacheKeyPrefix, DistributedCacheEntryOptions options)
+        {
+            var pagination = new Pagination(1, 10);
+
+            var paginatedItems = items
+                .Skip((pagination.Page - 1) * pagination.Size)
+                .Take(pagination.Size);
+
+            var dtos = paginatedItems.Select(dtoMapper);
+
+            var pagedResult = new PagedResult<TDto>
+            (
+                dtos,
+                items.Count(),
+                pagination.Page,
+                pagination.Size
+            );
+
+            var cacheKey = CacheHelpers.GenerateCacheKey(cacheKeyPrefix, pagination);
+            await _cache.SetAsync(cacheKey, Serialize(pagedResult), options);
+        }
     }
 }

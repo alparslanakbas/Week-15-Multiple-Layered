@@ -1,6 +1,4 @@
-﻿using Multiple_Layered_DataAccess.Library.Repositories;
-
-namespace Multiple_Layered_DataAccess.Library.UnitOfWork
+﻿namespace Multiple_Layered_DataAccess.Library.UnitOfWork
 {
     public interface IUnitOfWork : IDisposable
     {

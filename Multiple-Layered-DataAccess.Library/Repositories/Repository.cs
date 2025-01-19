@@ -28,6 +28,11 @@
             return await _dbSet.ToListAsync();
         }
 
+        public async Task<T> GetByCompositeKeyAsync(Guid key1, Guid key2)
+        {
+            return await _dbSet.FindAsync(key1, key2);
+        }
+
         public async Task<T> GetByIdAsync(Guid id)
         {
             return await _dbSet.FindAsync(id);

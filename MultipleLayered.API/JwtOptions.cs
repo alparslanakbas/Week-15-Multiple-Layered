@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-
-namespace Multiple_Layered.API
+﻿namespace Multiple_Layered.API
 {
     public static class JwtOptions
     {

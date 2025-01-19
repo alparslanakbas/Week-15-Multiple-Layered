@@ -15,9 +15,9 @@
                 .HasColumnType("decimal(18,2)")
                 .HasComment("Toplam Tutar");
 
-            builder.HasOne<User>()
-                .WithMany(x => x.Orders)
-                .HasForeignKey(x => x.UserId)
+            builder.HasOne(o => o.User) 
+                .WithMany(u => u.Orders) 
+                .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_Orders_Users");
 

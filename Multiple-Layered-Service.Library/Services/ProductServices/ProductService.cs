@@ -1,6 +1,4 @@
-﻿using Multiple_Layered_Service.Library.Dtos.ProductDtos;
-using Multiple_Layered_Service.Library.Services.ProductServices;
-
+﻿namespace Multiple_Layered_Service.Library.Services.ProductServices;
 public class ProductService : IProductService
 {
     readonly IUnitOfWork _unitOfWork;
@@ -12,32 +10,52 @@ public class ProductService : IProductService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<ListAllProductDto>> GetAllAsync()
+    public async Task<PagedResult<ListAllProductDto>> GetAllAsync(Pagination pagination)
     {
         try
         {
-            var productDtoList = await _unitOfWork.GetFromCacheAsync<IEnumerable<ListAllProductDto>>("products_cache");
-            if (productDtoList is not null)
+            var cacheKey = CacheHelpers.GenerateCacheKey("products", pagination);
+
+            var cachedResult = await _unitOfWork.GetFromCacheAsync<PagedResult<ListAllProductDto>>(cacheKey);
+            if (cachedResult is not null)
             {
-                _logger.LogInformation("Ürünler cache'den getirildi");
-                return productDtoList;
+                _logger.LogInformation("Ürünler cache'den getirildi. Sayfa: {Page}, Boyut: {Size}",
+                    pagination.Page, pagination.Size);
+                return cachedResult;
             }
 
             var products = await _unitOfWork.Products.GetAllAsync();
-            productDtoList = products.Select(p => new ListAllProductDto(
+            var totalCount = products.Count();
+
+            var paginatedProducts = products
+                .Skip((pagination.Page - 1) * pagination.Size)
+                .Take(pagination.Size);
+
+            var productDtos = paginatedProducts.Select(p => new ListAllProductDto(
                 p.Id,
                 p.Name,
                 p.Price,
                 p.Stock
             ));
 
-            await _unitOfWork.SetToCacheAsync("products_cache", productDtoList);
-            _logger.LogInformation("Tüm ürünler başarıyla getirildi");
-            return productDtoList;
+            var result = new PagedResult<ListAllProductDto>(
+                productDtos,
+                totalCount,
+                pagination.Page,
+                pagination.Size
+            );
+
+            await _unitOfWork.SetToCacheAsync(cacheKey, result);
+
+            _logger.LogInformation("Ürünler başarıyla getirildi. Sayfa: {Page}, Boyut: {Size}, Toplam: {Total}",
+                pagination.Page, pagination.Size, totalCount);
+
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ürünleri getirirken hata oluştu");
+            _logger.LogError(ex, "Ürünleri getirirken hata oluştu. Sayfa: {Page}, Boyut: {Size}",
+                pagination.Page, pagination.Size);
             throw;
         }
     }
@@ -78,12 +96,7 @@ public class ProductService : IProductService
 
             return createProductDto;
         }
-        catch (UnauthorizedAccessException)
-        {
-            await _unitOfWork.RollbackAsync();
-            _logger.LogWarning("Yetkisiz işlem: {ProductName}", createProductDto.Name);
-            throw;
-        }
+
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync();
@@ -116,13 +129,6 @@ public class ProductService : IProductService
             return updateProductDto;
         }
 
-        catch (UnauthorizedAccessException)
-        {
-            await _unitOfWork.RollbackAsync();
-            _logger.LogWarning("Yetkisiz işlem: {ProductId}", updateProductDto.Id);
-            throw;
-        }
-
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync();
@@ -147,12 +153,6 @@ public class ProductService : IProductService
             await _unitOfWork.CommitAsync();
 
             _logger.LogInformation("Ürün silindi: {ProductId}", id);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            await _unitOfWork.RollbackAsync();
-            _logger.LogWarning("Yetkisiz işlem: {ProductId}", id);
-            throw;
         }
 
         catch (Exception ex)

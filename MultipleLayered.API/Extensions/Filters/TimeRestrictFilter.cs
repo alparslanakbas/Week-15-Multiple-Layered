@@ -7,7 +7,7 @@
         private readonly ILogger<TimeRestrictFilter> _logger;
 
         public TimeRestrictFilter(ILogger<TimeRestrictFilter> logger,
-            string startTime = "09:00", string endTime = "17:00")
+            string startTime = "06:00", string endTime = "23:59")
         {
             _logger = logger;
             _startTime = TimeOnly.Parse(startTime);
